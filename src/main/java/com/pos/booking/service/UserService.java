@@ -9,7 +9,11 @@ import com.pos.booking.domain.User;
 import com.pos.booking.domain.UserTable;
 import com.pos.booking.exception.UserNotFoundException;
 import com.pos.booking.repository.UserRepository;
-
+/**
+ * 
+ * @author Ompratap
+ *
+ */
 @Service
 public class UserService {
 
