@@ -4,8 +4,10 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.pos.booking.domain.CartItems;
 import com.pos.booking.domain.Category;
 import com.pos.booking.domain.MenuItems;
 import com.pos.booking.repository.MenuItemsRepository;
@@ -26,7 +28,12 @@ public class MenuService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<MenuItems> getMenu(String articles) {
-		return menuItemsRepository.fetchMenuItems(articles);
+	public List<MenuItems> getMenu() {
+		return menuItemsRepository.fetchMenuItems();
+	}
+	
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	public boolean addToKot(List<CartItems> cartItems) {
+		return menuItemsRepository.addToKot(cartItems);
 	}
 }
