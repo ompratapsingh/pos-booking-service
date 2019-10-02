@@ -1,6 +1,7 @@
 package com.pos.booking.resource;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -32,4 +33,8 @@ public class UserController {
 		return ResponseEntity.ok(userService.getUserTables(id));
 	}
 
+	@GetMapping(value = "/{branchId}/salesman")
+	public ResponseEntity<Map<String, String>> getSalesMan(@PathVariable("branchId") String branchId) {
+		return ResponseEntity.ok(userService.getSalesMan(branchId));
+	}
 }

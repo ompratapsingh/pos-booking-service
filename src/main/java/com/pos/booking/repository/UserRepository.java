@@ -1,16 +1,19 @@
 package com.pos.booking.repository;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.core.PreparedStatementSetter;
 import org.springframework.jdbc.core.ResultSetExtractor;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 import com.pos.booking.domain.User;
@@ -24,6 +27,8 @@ public class UserRepository {
 	private static final String USER_LOGIN_DETAIL_QUERY = "SELECT TOP(1) ID, BRANCH, SALESMAN, HWSERIAL FROM UserDetail WHERE ID=?";
 
 	private static final String USER_TABLE_FETCH_QUERY = "SELECT Code,Name,Users,Availability,Location FROM TABLEMASTER WHERE USERS LIKE ?";
+
+	private static final String FETCH_SALES_MAN_DETAILS_FOR_BRANCH = "Select code,name from salesman where  branch=?";
 
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
@@ -72,6 +77,29 @@ public class UserRepository {
 			}
 		}, new UserTableRowMapper());
 
+	}
+
+	public Map<String, String> fetchSalesManBranchWise(String branchId) {
+		return jdbcTemplate.query(new PreparedStatementCreator() {
+
+			@Override
+			public PreparedStatement createPreparedStatement(Connection con) throws SQLException {
+				PreparedStatement preparedStatement = con.prepareCall(FETCH_SALES_MAN_DETAILS_FOR_BRANCH);
+				preparedStatement.setString(1, branchId);
+				return preparedStatement;
+			}
+		}, new ResultSetExtractor<Map<String, String>>() {
+
+			@Override
+			public Map<String, String> extractData(ResultSet rs) throws SQLException, DataAccessException {
+				Map<String, String> salesManMap = new HashMap<>();
+				while (rs.next()) {
+					salesManMap.put(rs.getString("code"), rs.getString("name"));
+				}
+				return salesManMap;
+			}
+
+		});
 	}
 
 }

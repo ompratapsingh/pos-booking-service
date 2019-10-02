@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,16 +33,16 @@ public class MenuController {
 		return ResponseEntity.ok(menuService.getCategory());
 	}
 
-	@GetMapping(value = "/items")
-	public ResponseEntity<List<MenuItems>> getUserTable() {
-		return ResponseEntity.ok(menuService.getMenu());
+	@GetMapping(value = "/{id}/items")
+	public ResponseEntity<List<MenuItems>> getUserTable(@PathVariable("id") String id) {
+		return ResponseEntity.ok(menuService.getMenu(id));
 	}
 
 	@PostMapping(value = "/savecart", consumes = "application/json")
 	@ResponseStatus(code = HttpStatus.CREATED)
-	public void addToCart(@RequestBody List<CartItems> cartItems, HttpServletRequest httpServletRequest,
+	public void addToCart(@RequestBody CartItems cart, HttpServletRequest httpServletRequest,
 			HttpServletResponse httpServletResponse) {
-		menuService.addToKot(cartItems);
+		menuService.addToKot(cart);
 	}
 
 }

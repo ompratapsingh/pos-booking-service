@@ -1,6 +1,7 @@
 package com.pos.booking.service;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -30,5 +31,9 @@ public class UserService {
 
 	public List<UserTable> getUserTables(String id) {
 		return repository.fetchUserTables(id);
+	}
+
+	public Map<String, String> getSalesMan(String branchId) {
+		return repository.fetchSalesManBranchWise(branchId);
 	}
 }
