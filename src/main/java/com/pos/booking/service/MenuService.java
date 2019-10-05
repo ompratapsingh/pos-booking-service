@@ -11,7 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.pos.booking.domain.CartItems;
 import com.pos.booking.domain.Category;
 import com.pos.booking.domain.MenuItems;
+import com.pos.booking.domain.TableStatus;
 import com.pos.booking.repository.MenuItemsRepository;
+import com.pos.booking.repository.UserRepository;
 import com.pos.booking.util.BookingUtil;
 
 /**
@@ -25,6 +27,9 @@ public class MenuService {
 	@Autowired
 	private MenuItemsRepository menuItemsRepository;
 
+	@Autowired
+	private UserRepository userRepository;
+	
 	public List<Category> getCategory() {
 		return menuItemsRepository.fetchCategories();
 	}
@@ -43,6 +48,11 @@ public class MenuService {
 		cartItems.setPrefix(BookingUtil.createPrefix(LocalDate.now()));
 		cartItems.setSrl(srl);
 		cartItems.setType("KOT");
+		userRepository.updateTableStatus(TableStatus.TABALE_STATUS_SETTLEMENT_PENDING.getStatusCode(), cartItems.getTableCode());
 		return (menuItemsRepository.addToKot(cartItems) && menuItemsRepository.addToOpenTable(cartItems));
+	}
+
+	public CartItems getCartDetails(String tableId) {
+		return menuItemsRepository.getKotDetailsById(tableId);
 	}
 }

@@ -22,7 +22,7 @@ import com.pos.booking.domain.UserTable;
 @Repository
 public class UserRepository {
 
-	private static final String LOGIN_VALIDATE_QUERY = "SELECT TOP(1) COUNT(ID) as login_count FROM UserDetail WHERE ID=? AND PASSWORD=?";
+	private static final String LOGIN_VALIDATE_QUERY = "SELECT TOP(1) COUNT(ID) as login_count FROM UserDetail WHERE ID=? AND PASSWORD=? AND SessionCount=0";
 
 	private static final String USER_LOGIN_DETAIL_QUERY = "SELECT TOP(1) ID, BRANCH, SALESMAN, HWSERIAL FROM UserDetail WHERE ID=?";
 
@@ -102,4 +102,14 @@ public class UserRepository {
 		});
 	}
 
+	public boolean updateTableStatus(String statusCode, String tableCode) {
+		String UPDATE_TABLE_QUERY = new String("update TableMaster set Availability=? where code=?");
+		return jdbcTemplate.update(UPDATE_TABLE_QUERY,statusCode, tableCode) > 0;
+	}
+	
+	public void updateLoginAndLogout(int code, String id) {
+		String query=new String("update UserDetail set SessionCount=? where ID=?");
+		jdbcTemplate.update(query, code, id);
+	}
+	
 }

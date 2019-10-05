@@ -3,12 +3,15 @@ package com.pos.booking.repository;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementSetter;
+import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
@@ -22,7 +25,7 @@ public class MenuItemsRepository {
 
 	private static final String QUERY_FOR_FETCH_CATEGORY = "select Code, Descr, ColorCode from ArticleMaster";
 
-	private static final String QUERY_FOR_ITEMS_LIST = "select txm.Name as tax_name ,txm.Scope as tax_scope "
+	private static final String QUERY_FOR_ITEMS_LIST = "select txm.Name as tax_name ,txm.Scope as tax_scope,stores.code as store_code "
 			+ ",txm.Pct as tax_percentage ,txm.Addtax as add_tax "
 			+ ",txm.Surcharge as surcharge,itm.Code as item_master_code, itm.Name as item_master_name, itm.Article,mm.Code,mm.Name,mm.Rate,mm.DiscPercent,mm.TaxCode,mm.AppGroup,mm.KotPrinter "
 			+ "from ItemMaster itm inner join MenuMaster mm on itm.code = mm.ItemCode "
@@ -41,6 +44,22 @@ public class MenuItemsRepository {
 			+ ",DiscAmt" + ",HwSerial" + ",EnteredBy" + ") values (?," + "?," + "?," + "?," + "?," + "?," + "?," + "?,"
 			+ "?," + "?," + "?," + "?," + "?," + "?," + "?," + "?," + "?," + "?," + "?," + "?)";
 
+	/*
+	 * private static final String QUERY_FOR_FETCH_KOT_DETAILS_BY_TABLE_CODE =
+	 * "SELECT " + "otb.Branch," + "otb.Type," + "otb.Srl," + "otb.Prefix," +
+	 * "otb.Captain," + "otb.Docdate," + "otb.PartyName," + "otb.px," +
+	 * "otb.Tablecode," + "otb.Doctime," + "otb.BillAmount," + "otb.PartyAddr," +
+	 * "otb.PartyContact," + "otb.Store," + "otb.Noofprints," + "otb.PartyEmail," +
+	 * "otb.Roundoff," + "otb.DiscAmt," + "otb.HwSerial," + "otb.EnteredBy," +
+	 * "kt.SNO as kt_sno," + "kt.Code as kt_Code," + "kt.Qty as kt_Qty," +
+	 * "kt.Rate as kt_Rate," + "kt.Disc as kt_Disc," + "kt.DiscAmt as kt_DiscAmt," +
+	 * "kt.Docdate as kt_Docdate," + "kt.Doctime kt_Doctime," +
+	 * "kt.TaxCode as kt_TaxCode," + "kt.Remark as kt_Remark," +
+	 * "kt.Taxamt as kt_Taxamt," + "kt.AddtaxAmt as kt_AddtaxAmt" +
+	 * "from Opentables otb inner join KOT kt on otb.Srl=kt.srl where otb.Tablecode=?"
+	 * ;
+	 * 
+	 */
 	private static final String QUERY_FOR_FETCH_SRL = "Select isnull(Max(srl),0) as srl_num From KOT";
 
 	@Autowired
@@ -74,6 +93,7 @@ public class MenuItemsRepository {
 				items.setTax_percentage(resultSet.getString("tax_percentage"));
 				items.setAdd_tax(resultSet.getString("tax_percentage"));
 				items.setSurcharge(resultSet.getString("surcharge"));
+				items.setStore_code(resultSet.getString("store_code"));
 				return items;
 			}
 
@@ -154,4 +174,78 @@ public class MenuItemsRepository {
 		return Integer.valueOf(jdbcTemplate.queryForObject(QUERY_FOR_FETCH_SRL, String.class));
 	}
 
+	public CartItems getKotDetailsById(String tableId) {
+		StringBuilder QUERY_FOR_FETCH_KOT_DETAILS_BY_TABLE_CODE = new StringBuilder();
+		QUERY_FOR_FETCH_KOT_DETAILS_BY_TABLE_CODE
+				.append("SELECT   otb.Branch,  otb.Type,"
+						+ "otb.Srl,  otb.Prefix,  otb.Captain,  otb.Docdate,  otb.PartyName,  otb.px,"
+						+ "otb.Tablecode,  otb.Doctime,  otb.BillAmount,  otb.PartyAddr,  otb.PartyContact,"
+						+ "otb.Store,  otb.Noofprints,  otb.PartyEmail,  otb.Roundoff,  otb.DiscAmt,  otb.HwSerial,"
+						+ "otb.EnteredBy,  kt.SNO as kt_sno,  kt.Code as kt_Code,  kt.Qty as kt_Qty,")
+				.append("kt.Rate as kt_Rate,  kt.Disc as kt_Disc,  kt.DiscAmt as kt_DiscAmt,  kt.Docdate as kt_Docdate,"
+						+ "kt.Doctime kt_Doctime,  kt.TaxCode as kt_TaxCode,  kt.Remark as kt_Remark,"
+						+ "kt.Taxamt as kt_Taxamt,  kt.AddtaxAmt as kt_AddtaxAmt,kt.AddtaxAmt2 kt_AddtaxAmt2")
+				.append(" from Opentables otb inner join KOT kt on otb.Srl=kt.srl where otb.Tablecode=?");
+
+		return jdbcTemplate.query(QUERY_FOR_FETCH_KOT_DETAILS_BY_TABLE_CODE.toString(),
+				new ResultSetExtractor<CartItems>() {
+
+					@Override
+					public CartItems extractData(ResultSet resultSet) throws SQLException, DataAccessException {
+						CartItems cartItems = new CartItems();
+						List<Items> items = new ArrayList<>();
+						boolean isFirstResultSet = true;
+						while (resultSet.next()) {
+							if (isFirstResultSet) {
+								cartItems.setbranch(resultSet.getString("Branch"));
+								cartItems.setType(resultSet.getString("Type"));
+								cartItems.setSrl(resultSet.getString("Srl"));
+								cartItems.setPrefix(resultSet.getString("Prefix"));
+								cartItems.setCaptain(resultSet.getString("Captain"));
+								cartItems.setDocdate(resultSet.getString("Docdate"));
+								cartItems.setPartyName(resultSet.getString("PartyName"));
+								cartItems.setPaxNo(resultSet.getString("px"));
+								cartItems.setTableCode(resultSet.getString("Tablecode"));
+								cartItems.setDoctime(resultSet.getString("Doctime"));
+								cartItems.setTotalbillAmount(resultSet.getString("BillAmount"));
+								cartItems.setPartyAddr(resultSet.getString("PartyAddr"));
+								cartItems.setPartyContact(resultSet.getString("PartyContact"));
+								cartItems.setStore(resultSet.getString("Store"));
+								cartItems.setNoofPrints(resultSet.getInt("Noofprints"));
+								cartItems.setPartyEmail(resultSet.getString("PartyEmail"));
+								cartItems.setRoundoff(resultSet.getString("Roundoff"));
+								cartItems.setTotalDiscAmt(resultSet.getString("DiscAmt"));
+								cartItems.setHwserial(resultSet.getString("HwSerial"));
+								cartItems.setEnteredBy(resultSet.getString("EnteredBy"));
+							}
+							isFirstResultSet = false;
+							items.add(setItemDetauls(resultSet));
+						}
+						cartItems.setItems(items);
+						return cartItems;
+					}
+
+				}, tableId);
+	}
+
+	private Items setItemDetauls(ResultSet resultSet) throws SQLException {
+		Items item = new Items();
+		// Items result set
+		item.setSno(resultSet.getString("kt_sno"));
+		item.setCode(resultSet.getString("kt_Code"));
+		item.setQty(resultSet.getInt("kt_Qty"));
+		item.setRate(resultSet.getString("kt_Rate"));
+		item.setDisc(resultSet.getString("kt_Disc"));
+		item.setDiscAmt(resultSet.getString("kt_DiscAmt"));
+		item.setTaxCode(resultSet.getString("kt_TaxCode"));
+		item.setRemarks(resultSet.getString("kt_Remark"));
+		item.setTaxamt(resultSet.getString("kt_Taxamt"));
+		item.setAddtaxAmt(resultSet.getString("kt_AddtaxAmt"));
+		item.setAddtaxAmt2(resultSet.getString("kt_AddtaxAmt2"));
+		return item;
+	}
+	
+	public void genrateBill(String table) {
+		
+	}
 }

@@ -6,6 +6,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,5 +37,15 @@ public class UserController {
 	@GetMapping(value = "/{branchId}/salesman")
 	public ResponseEntity<Map<String, String>> getSalesMan(@PathVariable("branchId") String branchId) {
 		return ResponseEntity.ok(userService.getSalesMan(branchId));
+	}
+
+	@PatchMapping(value = "/table/{tableCode}/status/{status}")
+	public void updateTableStatus(@PathVariable("tableCode") String tableCode, @PathVariable("status") String status) {
+		userService.updateTableStatus(status, tableCode);
+	}
+
+	@GetMapping(value = "/logout/{id}")
+	public void logOut(@PathVariable("id") String id) {
+		userService.logOutUpdate(id);
 	}
 }

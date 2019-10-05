@@ -45,4 +45,9 @@ public class MenuController {
 		menuService.addToKot(cart);
 	}
 
+	@GetMapping(value = "/{tableId}/cart", consumes = "application/json")
+	public ResponseEntity<CartItems> getCartDetails(@PathVariable("tableId") String tableId) {
+		return ResponseEntity.ok(menuService.getCartDetails(tableId));
+	}
+
 }

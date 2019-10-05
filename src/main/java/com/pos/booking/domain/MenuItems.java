@@ -18,6 +18,15 @@ public class MenuItems {
 	private String tax_percentage;
 	private String add_tax;
 	private String surcharge;
+	private String store_code;
+
+	public String getStore_code() {
+		return store_code;
+	}
+
+	public void setStore_code(String store_code) {
+		this.store_code = store_code;
+	}
 
 	public String getTax_name() {
 		return tax_name;
