@@ -17,6 +17,7 @@ public final class UserTableRowMapper implements RowMapper<UserTable> {
 		userTable.setUsers(resultSet.getString("Users"));
 		userTable.setAvailablity(resultSet.getString("Availability"));
 		userTable.setLocation(resultSet.getString("Location"));
+		userTable.setAmount(resultSet.getString("total_amount"));
 		return userTable;
 	}
 

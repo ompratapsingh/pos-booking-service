@@ -36,11 +36,48 @@ public class CartItems {
 	private String partyAddr;
 	private String totalbillAmount;
 	private String partyName;
+	private String touchValue;
+	private String billno;
+	private String taxAmt;
+	private String Addtaxamt;
+	
+	
+	public String getTaxAmt() {
+		return taxAmt;
+	}
+
+	public void setTaxAmt(String taxAmt) {
+		this.taxAmt = taxAmt;
+	}
+
+	public String getAddtaxamt() {
+		return Addtaxamt;
+	}
+
+	public void setAddtaxamt(String addtaxamt) {
+		Addtaxamt = addtaxamt;
+	}
+
+	public String getBillno() {
+		return billno;
+	}
+
+	public void setBillno(String billno) {
+		this.billno = billno;
+	}
 
 	private List<Items> items;
 
 	public List<Items> getItems() {
 		return items;
+	}
+
+	public String getTouchValue() {
+		return touchValue;
+	}
+
+	public void setTouchValue(String touchValue) {
+		this.touchValue = touchValue;
 	}
 
 	public void setItems(List<Items> items) {
@@ -218,6 +255,17 @@ public class CartItems {
 
 	public void setHwserial(String hwserial) {
 		this.hwserial = hwserial;
+	}
+
+	@Override
+	public String toString() {
+		return "CartItems [branch=" + branch + ", srl=" + srl + ", prefix=" + prefix + ", docdate=" + docdate
+				+ ", doctime=" + doctime + ", noofPrints=" + noofPrints + ", store=" + store + ", tableCode="
+				+ tableCode + ", type=" + type + ", paxNo=" + paxNo + ", captain=" + captain + ", hwserial=" + hwserial
+				+ ", storeCode=" + storeCode + ", enteredBy=" + enteredBy + ", totalDiscAmt=" + totalDiscAmt
+				+ ", roundoff=" + roundoff + ", partyEmail=" + partyEmail + ", partyContact=" + partyContact
+				+ ", partyAddr=" + partyAddr + ", totalbillAmount=" + totalbillAmount + ", partyName=" + partyName
+				+ ", touchValue=" + touchValue + ", billno=" + billno + ", items=" + items + "]";
 	}
 
 }

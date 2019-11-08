@@ -36,5 +36,4 @@ public class BookingUtil {
 		}
 		return (preFix = preFix + "03");
 	}
-
 }

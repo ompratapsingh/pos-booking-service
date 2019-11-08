@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -21,12 +22,14 @@ import com.pos.booking.domain.UserTable;
 
 @Repository
 public class UserRepository {
+	
+	private org.slf4j.Logger log = LoggerFactory.getLogger(MenuItemsRepository.class);
 
 	private static final String LOGIN_VALIDATE_QUERY = "SELECT TOP(1) COUNT(ID) as login_count FROM UserDetail WHERE ID=? AND PASSWORD=? AND SessionCount=0";
 
 	private static final String USER_LOGIN_DETAIL_QUERY = "SELECT TOP(1) ID, BRANCH, SALESMAN, HWSERIAL FROM UserDetail WHERE ID=?";
 
-	private static final String USER_TABLE_FETCH_QUERY = "SELECT Code,Name,Users,Availability,Location FROM TABLEMASTER WHERE USERS LIKE ?";
+	private static final String USER_TABLE_FETCH_QUERY = "SELECT Code,Name,Users,Availability,Location,(select sum(BillAmount) from Opentables where TableCode=tblmst.Code) as total_amount FROM TABLEMASTER tblmst WHERE USERS LIKE ?";
 
 	private static final String FETCH_SALES_MAN_DETAILS_FOR_BRANCH = "Select code,name from salesman where  branch=?";
 
@@ -103,6 +106,7 @@ public class UserRepository {
 	}
 
 	public boolean updateTableStatus(String statusCode, String tableCode) {
+		log.info("Updating table status with {} for tableID: {}",statusCode ,tableCode);
 		String UPDATE_TABLE_QUERY = new String("update TableMaster set Availability=? where code=?");
 		return jdbcTemplate.update(UPDATE_TABLE_QUERY,statusCode, tableCode) > 0;
 	}

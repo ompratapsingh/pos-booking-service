@@ -16,9 +16,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.pos.booking.domain.BillDetails;
 import com.pos.booking.domain.CartItems;
 import com.pos.booking.domain.Category;
 import com.pos.booking.domain.MenuItems;
+import com.pos.booking.domain.PaymentDetails;
 import com.pos.booking.service.MenuService;
 
 @RestController
@@ -50,4 +52,13 @@ public class MenuController {
 		return ResponseEntity.ok(menuService.getCartDetails(tableId));
 	}
 
+	@PostMapping(value = "/generateBill", consumes = "application/json")
+	public ResponseEntity<CartItems> genrateBill(@RequestBody BillDetails billdetails) {
+		return ResponseEntity.ok(menuService.genrateBillForTable(billdetails));
+	}
+
+	@PostMapping(value = "/paymentSettlement", consumes = "application/json")
+	public void updatePaymentDetails(@RequestBody PaymentDetails paymentDetails) {
+		menuService.updatePaymentDetails(paymentDetails);
+	}
 }
