@@ -16,7 +16,16 @@ public class PaymentDetails {
 	private String settletime="";
 	private String srl="";
 	private String tableCode;
+	private String refundAmt;
 	
+	public String getRefundAmt() {
+		return refundAmt;
+	}
+
+	public void setRefundAmt(String refundAmt) {
+		this.refundAmt = refundAmt;
+	}
+
 	public String getTableCode() {
 		return tableCode;
 	}

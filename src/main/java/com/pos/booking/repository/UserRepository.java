@@ -22,7 +22,7 @@ import com.pos.booking.domain.UserTable;
 
 @Repository
 public class UserRepository {
-	
+
 	private org.slf4j.Logger log = LoggerFactory.getLogger(MenuItemsRepository.class);
 
 	private static final String LOGIN_VALIDATE_QUERY = "SELECT TOP(1) COUNT(ID) as login_count FROM UserDetail WHERE ID=? AND PASSWORD=? AND SessionCount=0";
@@ -106,14 +106,19 @@ public class UserRepository {
 	}
 
 	public boolean updateTableStatus(String statusCode, String tableCode) {
-		log.info("Updating table status with {} for tableID: {}",statusCode ,tableCode);
+		log.info("Updating table status with {} for tableID: {}", statusCode, tableCode);
 		String UPDATE_TABLE_QUERY = new String("update TableMaster set Availability=? where code=?");
-		return jdbcTemplate.update(UPDATE_TABLE_QUERY,statusCode, tableCode) > 0;
+		return jdbcTemplate.update(UPDATE_TABLE_QUERY, statusCode, tableCode) > 0;
 	}
-	
+
 	public void updateLoginAndLogout(int code, String id) {
-		String query=new String("update UserDetail set SessionCount=? where ID=?");
-		jdbcTemplate.update(query, code, id);
+		jdbcTemplate.update("update UserDetail set SessionCount=? where ID=?", new PreparedStatementSetter() {
+			@Override
+			public void setValues(PreparedStatement ps) throws SQLException {
+				ps.setInt(1, code);
+				ps.setString(2, id);
+			}
+		});
 	}
-	
+
 }

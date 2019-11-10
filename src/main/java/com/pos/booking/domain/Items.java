@@ -117,4 +117,12 @@ public class Items {
 		this.addtaxAmt2 = addtaxAmt2;
 	}
 
+	@Override
+	public String toString() {
+		return "Items [code=" + code + ", qty=" + qty + ", rate=" + rate + ", disc=" + disc + ", discAmt=" + discAmt
+				+ ", taxCode=" + taxCode + ", remarks=" + remarks + ", taxamt=" + taxamt + ", addtaxAmt=" + addtaxAmt
+				+ ", addtaxAmt2=" + addtaxAmt2 + ", item_name=" + item_name + ", sno=" + sno + "]";
+	}
+	
+	
 }

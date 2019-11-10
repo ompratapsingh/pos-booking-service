@@ -4,6 +4,7 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.time.LocalDate;
 import java.time.temporal.ChronoField;
 import java.util.ArrayList;
@@ -24,6 +25,7 @@ import com.pos.booking.domain.Category;
 import com.pos.booking.domain.Items;
 import com.pos.booking.domain.MenuItems;
 import com.pos.booking.domain.PaymentDetails;
+import com.pos.booking.exception.DaoException;
 
 @Repository
 public class MenuItemsRepository {
@@ -109,7 +111,7 @@ public class MenuItemsRepository {
 
 	}
 
-	public boolean addToKot(CartItems cart) {
+	public boolean addToKot(CartItems cart) throws DaoException {
 		int[] insertedRow = null;
 		try {
 			insertedRow = jdbcTemplate.batchUpdate(QUERY_FOR_INSERT_CART_ITEMS, new BatchPreparedStatementSetter() {
@@ -124,10 +126,6 @@ public class MenuItemsRepository {
 					preparedStatement.setString(++cIndex, items.getRate());
 					preparedStatement.setString(++cIndex, items.getDisc());
 					preparedStatement.setString(++cIndex, items.getDiscAmt());
-					// preparedStatement.setDate(++cIndex, new
-					// java.sql.Date(System.currentTimeMillis()));;
-					// preparedStatement.setDate(++cIndex,new
-					// Date(LocalDate.now().getLong(ChronoField.EPOCH_DAY)));
 					preparedStatement.setString(++cIndex, cart.getDoctime());
 					preparedStatement.setString(++cIndex, cart.getTableCode());
 					preparedStatement.setInt(++cIndex, cart.getNoofPrints());
@@ -154,6 +152,7 @@ public class MenuItemsRepository {
 
 		} catch (Exception sqlException) {
 			log.error("Error while adding cart details in database", sqlException);
+			throw new DaoException("Add To KOT failed: ", sqlException);
 		}
 
 		return insertedRow.length == cart.getItems().size();
@@ -232,9 +231,10 @@ public class MenuItemsRepository {
 								cartItems.setPartyAddr(resultSet.getString("PartyAddr"));
 								cartItems.setPartyContact(resultSet.getString("PartyContact"));
 								cartItems.setStore(resultSet.getString("Store"));
+								cartItems.setStoreCode(resultSet.getString("Store"));
 								cartItems.setNoofPrints(Integer.valueOf(getTotal("Noofprints", tableId)));
 								cartItems.setPartyEmail(resultSet.getString("PartyEmail"));
-								cartItems.setRoundoff(getTotal("Roundoff", tableId));
+								// cartItems.setRoundoff(getTotal("Roundoff", tableId));
 								cartItems.setTotalDiscAmt(getTotal("DiscAmt", tableId));
 								cartItems.setHwserial(resultSet.getString("HwSerial"));
 								cartItems.setEnteredBy(resultSet.getString("EnteredBy"));
@@ -393,10 +393,26 @@ public class MenuItemsRepository {
 	}
 
 	public boolean clearKotTableForTable(String tableCode) {
-		String clear_kot_for_table = "delete from Kot where TableCode=?";
-		String clear_opentable_for_table = "delete from Opentables where tableCode=?";
-		return (jdbcTemplate.update(clear_kot_for_table, tableCode) == 1
-				&& jdbcTemplate.update(clear_opentable_for_table, tableCode) == 1) ? true : false;
+	
+		int tableCodeInint = Integer.valueOf(tableCode);
+		int kotStatus = jdbcTemplate.update("delete from Kot where TableCode=?", new PreparedStatementSetter() {
+			@Override
+			public void setValues(PreparedStatement ps) throws SQLException {
+				ps.setInt(1, tableCodeInint);
+			}
+
+		});
+
+		int opnTableStatus = jdbcTemplate.update("delete from Opentables where TableCode=?",
+				new PreparedStatementSetter() {
+
+					@Override
+					public void setValues(PreparedStatement ps) throws SQLException {
+						ps.setInt(1, tableCodeInint);
+					}
+
+				});
+		return (kotStatus == 1 && opnTableStatus == 1);
 	}
 
 	public String getSRL(String branch) {
@@ -405,13 +421,12 @@ public class MenuItemsRepository {
 	}
 
 	public void updatePaymentDetails(PaymentDetails paymentDetails) {
-		String sql = "update rSales set CashAmt=?,CCBank=?,CardAmt=?,Cardnumber=?,ChqAmt=?,Chqno=?,ChqBank=?,DebitAmt=?,Debtors=? ,Status=? ,Settleby=?,Settletime=? where Srl=?";
+		String sql = "update rSales set CashAmt=?,CCBank=?,CardAmt=?,Cardnumber=?,ChqAmt=?,Chqno=?,ChqBank=?,DebitAmt=?,Debtors=? ,Status=? ,Settleby=?,Settletime=?, RefundAmt=? where Srl=?";
 		jdbcTemplate.update(sql, new PreparedStatementSetter() {
 
 			@Override
 			public void setValues(PreparedStatement ps) throws SQLException {
 				int index = 0;
-
 				ps.setString(++index, paymentDetails.getCashAmt());
 				ps.setString(++index, paymentDetails.getcCBank());
 				ps.setString(++index, paymentDetails.getCardAmt());
@@ -424,10 +439,16 @@ public class MenuItemsRepository {
 				ps.setString(++index, paymentDetails.getStatus());
 				ps.setString(++index, paymentDetails.getSettleby());
 				ps.setString(++index, paymentDetails.getSettletime());
+				ps.setString(++index, paymentDetails.getRefundAmt());
 				ps.setString(++index, paymentDetails.getSrl());
 			}
 
 		});
 
+	}
+
+	public String getTableStatus(String tableId) {
+		return jdbcTemplate.queryForObject("select Availability from TableMaster where Code=?",
+				new String[] { tableId }, String.class);
 	}
 }

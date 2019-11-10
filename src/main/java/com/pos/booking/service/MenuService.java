@@ -18,6 +18,7 @@ import com.pos.booking.domain.Category;
 import com.pos.booking.domain.MenuItems;
 import com.pos.booking.domain.PaymentDetails;
 import com.pos.booking.domain.TableStatus;
+import com.pos.booking.exception.DaoException;
 import com.pos.booking.repository.MenuItemsRepository;
 import com.pos.booking.repository.UserRepository;
 import com.pos.booking.util.BookingUtil;
@@ -39,17 +40,21 @@ public class MenuService {
 	private UserRepository userRepository;
 
 	public List<Category> getCategory() {
-		return menuItemsRepository.fetchCategories();
+		List<Category> categories = menuItemsRepository.fetchCategories();
+		log.info("Available total category is: {}",categories.size());
+		return categories;
 	}
 
 	@Transactional(readOnly = true)
 	public List<MenuItems> getMenu(String tableCode) {
-		return menuItemsRepository.fetchMenuItems(tableCode);
+		List<MenuItems> menuItems =  menuItemsRepository.fetchMenuItems(tableCode);
+		log.info("Available total menu items is: <{}>  for tablecode: <{}> ",menuItems.size(),tableCode);
+		return menuItems;
 	}
 
-	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	public boolean addToKot(CartItems cartItems) {
-		log.info("Adding below cart details {} ", cartItems);
+	@Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = DaoException.class)
+	public boolean addToKot(CartItems cartItems) throws DaoException {
+		log.info("Adding cart details: {} ", cartItems);
 		String srl = "000" + (menuItemsRepository.getSrlNumber() + 1);
 		cartItems.setDoctime(
 				BookingUtil.getCurrentDateTime().getHour() + ":" + BookingUtil.getCurrentDateTime().getMinute());
@@ -57,17 +62,32 @@ public class MenuService {
 		cartItems.setPrefix(BookingUtil.createPrefix(LocalDate.now()));
 		cartItems.setSrl(srl);
 		cartItems.setType("KOT");
-		userRepository.updateTableStatus(TableStatus.TABALE_STATUS_SETTLEMENT_PENDING.getStatusCode(),
-				cartItems.getTableCode());
-		return (menuItemsRepository.addToKot(cartItems) && menuItemsRepository.addToOpenTable(cartItems));
+		if (null == cartItems.getPaxNo()) {
+			cartItems.setPaxNo("0");
+		}
+		if (null == cartItems.getCaptain()) {
+			cartItems.setCaptain("0");
+		}
+		userRepository.updateTableStatus(TableStatus.TABALE_STATUS_OCCUPIED.getStatusCode(), cartItems.getTableCode());
+		boolean status = menuItemsRepository.addToKot(cartItems) && menuItemsRepository.addToOpenTable(cartItems);
+		log.info("Sucessfully Added To KOT with status code {}", status);
+		return status;
 	}
 
 	public CartItems getCartDetails(String tableId) {
-		return menuItemsRepository.getKotDetailsById(tableId);
+		CartItems cartItems = menuItemsRepository.getKotDetailsById(tableId);
+		cartItems.setTableStatus(menuItemsRepository.getTableStatus(tableId));
+		double number = Double.valueOf(cartItems.getTotalbillAmount());
+		int integer = (int)number;
+		double decimal = (10 * number - 10 * integer)/10;
+		cartItems.setRoundoff(String.valueOf(decimal));
+		log.info("Total item ordered: <{}> for table ID: <{}>",cartItems.getItems(),tableId);
+		return cartItems;
 	}
 
 	@Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
-	public CartItems genrateBillForTable(BillDetails billDetails) {
+	public CartItems generateBillForTable(BillDetails billDetails) {
+		log.info("Generate Bill Request accepted for table ID <{}>",billDetails.getTableCode());
 		CartItems cartItems = menuItemsRepository.getKotDetailsById(billDetails.getTableCode());
 		if (cartItems != null) {
 			cartItems.setRoundoff(String.valueOf(Double.valueOf(cartItems.getTotalbillAmount())
@@ -83,27 +103,31 @@ public class MenuService {
 																													// tax
 			cartItems.setPrefix(BookingUtil.createPrefix(LocalDate.now()));
 			cartItems.setSrl("00" + ((Double.valueOf(menuItemsRepository.getSRL(cartItems.getBranch())) + 1)));
-			cartItems.setBillno(cartItems.getType() + cartItems.getSrl());	
+			cartItems.setBillno(cartItems.getType() + cartItems.getSrl());
 			log.info("Generating bill for total items: {} ", cartItems.getItems().size());
 			menuItemsRepository.updateRsales(cartItems);
 			menuItemsRepository.updateRstock(cartItems);
 			userRepository.updateTableStatus(TableStatus.TABALE_STATUS_SETTLEMENT_PENDING.getStatusCode(),
 					billDetails.getTableCode());
-			log.info("Cleaning KOT");
-			// menuItemsRepository.clearKotTableForTable(billDetails.getTableCode());
+			cartItems.setTableStatus(menuItemsRepository.getTableStatus(billDetails.getTableCode()));
+			log.info("Generate Bill Request sucessfully completd for total item's: <{}> and total amount: <{}>",cartItems.getItems(),cartItems.getTotalbillAmount());
 			return cartItems;
 		} else {
 			log.error("No items available in cart for table code {}", billDetails.getTableCode());
+			// will refactor 
 			throw new RuntimeException("No items available in cart");
 		}
 	}
 
 	public void updatePaymentDetails(PaymentDetails paymentDetails) {
-		log.info("Updating payment details for bill no {}",paymentDetails.getSrl());
-		LocalDateTime localDateTime= LocalDateTime.now();
-		paymentDetails.setSettletime(localDateTime.getHour()+""+localDateTime.getMinute());
+		log.info("Updating payment details for bill no {}", paymentDetails.getSrl());
+		LocalDateTime localDateTime = LocalDateTime.now();
+		paymentDetails.setSettletime(localDateTime.getHour() + "" + localDateTime.getMinute());
 		paymentDetails.setStatus("S");
 		menuItemsRepository.updatePaymentDetails(paymentDetails);
-		userRepository.updateTableStatus(TableStatus.TABLE_STATUS_AVAILABLE.getStatusCode(), paymentDetails.getTableCode());
+		log.info("Cleaning KOT");
+		menuItemsRepository.clearKotTableForTable(paymentDetails.getTableCode());
+		userRepository.updateTableStatus(TableStatus.TABLE_STATUS_AVAILABLE.getStatusCode(),paymentDetails.getTableCode());
+		log.info("Settlement done for table ID <{}>.Current table status: {}",paymentDetails.getTableCode(),menuItemsRepository.getTableStatus(paymentDetails.getTableCode()));
 	}
 }

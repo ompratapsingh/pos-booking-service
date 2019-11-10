@@ -31,17 +31,26 @@ public class CartItems {
 	private String enteredBy;
 	private String totalDiscAmt;
 	private String roundoff;
-	private String partyEmail;
-	private String partyContact;
-	private String partyAddr;
+	private String partyEmail="";
+	private String partyContact="";
+	private String partyAddr="";
 	private String totalbillAmount;
-	private String partyName;
+	private String partyName="";
 	private String touchValue;
 	private String billno;
 	private String taxAmt;
 	private String Addtaxamt;
+	private String tableStatus;
 	
 	
+	public String getTableStatus() {
+		return tableStatus;
+	}
+
+	public void setTableStatus(String tableStatus) {
+		this.tableStatus = tableStatus;
+	}
+
 	public String getTaxAmt() {
 		return taxAmt;
 	}
@@ -265,7 +274,9 @@ public class CartItems {
 				+ ", storeCode=" + storeCode + ", enteredBy=" + enteredBy + ", totalDiscAmt=" + totalDiscAmt
 				+ ", roundoff=" + roundoff + ", partyEmail=" + partyEmail + ", partyContact=" + partyContact
 				+ ", partyAddr=" + partyAddr + ", totalbillAmount=" + totalbillAmount + ", partyName=" + partyName
-				+ ", touchValue=" + touchValue + ", billno=" + billno + ", items=" + items + "]";
+				+ ", touchValue=" + touchValue + ", billno=" + billno + ", taxAmt=" + taxAmt + ", Addtaxamt="
+				+ Addtaxamt + ", tableStatus=" + tableStatus + ", items=" + items + "]";
 	}
 
+	
 }
