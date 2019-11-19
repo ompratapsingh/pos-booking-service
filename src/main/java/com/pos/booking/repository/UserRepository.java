@@ -17,6 +17,7 @@ import org.springframework.jdbc.core.PreparedStatementSetter;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.stereotype.Repository;
 
+import com.pos.booking.domain.SaleReport;
 import com.pos.booking.domain.User;
 import com.pos.booking.domain.UserTable;
 
@@ -119,6 +120,32 @@ public class UserRepository {
 				ps.setString(2, id);
 			}
 		});
+	}
+
+	public SaleReport getSalesReportData(String preFix) {
+		String sql = "Select Sum(Case when day(DocDate)=day(Getdate()) then NetAmount else 0 end) as Today ,Sum(Case when Month(DocDate)=Month(Getdate()) then NetAmount else 0 end) as CurrentMonth,Sum(Case when Prefix=? then NetAmount else 0 end) as CurrentYear  "
+				+ "From rSales Where Prefix=? And Canceled=0 ";
+
+		return jdbcTemplate.query(sql, new PreparedStatementSetter() {
+
+			@Override
+			public void setValues(PreparedStatement ps) throws SQLException {
+				ps.setString(1, preFix);
+				ps.setString(2, preFix);
+			}
+		}, new ResultSetExtractor<SaleReport>() {
+			@Override
+			public SaleReport extractData(ResultSet rs) throws SQLException, DataAccessException {
+				SaleReport saleReport = new SaleReport();
+				while (rs.next()) {
+					saleReport.setTodaySale(rs.getString("Today"));
+					saleReport.setMonthlySale(rs.getString("CurrentMonth"));
+					saleReport.setYearlySale(rs.getString("CurrentYear"));
+				}
+				return saleReport;
+			}
+		});
+
 	}
 
 }

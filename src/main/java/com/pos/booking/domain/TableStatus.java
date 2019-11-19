@@ -2,8 +2,9 @@ package com.pos.booking.domain;
 
 public enum TableStatus {
 
-	TABALE_STATUS_OCCUPIED("Y", "Occupied"), TABALE_STATUS_SETTLEMENT_PENDING("O",
-			"Settlement pending"), TABLE_STATUS_AVAILABLE("A", "Available");
+	TABLE_STATUS_OCCUPIED("Y", "Occupied"), 
+	TABLE_STATUS_SETTLEMENT_PENDING("O","Settlement pending"), 
+	TABLE_STATUS_AVAILABLE("A", "Available");
 
 	private String statusCode;
 	private String statusDescription;

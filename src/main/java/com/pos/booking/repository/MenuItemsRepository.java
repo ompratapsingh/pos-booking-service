@@ -4,7 +4,6 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Types;
 import java.time.LocalDate;
 import java.time.temporal.ChronoField;
 import java.util.ArrayList;
@@ -96,7 +95,9 @@ public class MenuItemsRepository {
 				items.setRate(resultSet.getString("Rate"));
 				items.setDiscPercent(resultSet.getString("DiscPercent"));
 				items.setTaxCode(resultSet.getString("TaxCode"));
-				items.setAppGroup(resultSet.getString("AppGroup"));
+				// items.setAppGroup(resultSet.getString("AppGroup"));
+				// Not required in APP
+				items.setAppGroup("");
 				items.setKotPrinter(resultSet.getString("KotPrinter"));
 				items.setTax_name(resultSet.getString("tax_name"));
 				items.setTax_scope(resultSet.getString("tax_scope"));
@@ -128,7 +129,7 @@ public class MenuItemsRepository {
 					preparedStatement.setString(++cIndex, items.getDiscAmt());
 					preparedStatement.setString(++cIndex, cart.getDoctime());
 					preparedStatement.setString(++cIndex, cart.getTableCode());
-					preparedStatement.setInt(++cIndex, cart.getNoofPrints());
+					preparedStatement.setInt(++cIndex,   cart.getNoofPrints());
 					preparedStatement.setString(++cIndex, cart.getPaxNo());
 					preparedStatement.setString(++cIndex, items.getRemarks());
 					preparedStatement.setString(++cIndex, cart.getStoreCode());
@@ -218,6 +219,7 @@ public class MenuItemsRepository {
 						while (resultSet.next()) {
 							if (isFirstResultSet) {
 								cartItems.setbranch(resultSet.getString("Branch"));
+								cartItems.setBranch(resultSet.getString("Branch"));
 								cartItems.setType(resultSet.getString("Type"));
 								cartItems.setSrl(resultSet.getString("Srl"));
 								cartItems.setPrefix(resultSet.getString("Prefix"));
@@ -294,9 +296,9 @@ public class MenuItemsRepository {
 					ps.setString(++index, cartItems.getBranch());
 					ps.setBoolean(++index, false);
 					ps.setString(++index, cartItems.getCaptain());
-					ps.setString(++index, ""); // Disc
+					ps.setString(++index, cartItems.getSepecialDiscount()); // Disc
 					ps.setString(++index, cartItems.getTotalDiscAmt()); // Disc amt
-					ps.setString(++index, cartItems.getDocdate());
+					ps.setObject(++index, cartItems.getSystemDate());
 					ps.setString(++index, cartItems.getDoctime());
 					ps.setString(++index, cartItems.getTotalbillAmount()); // Net Amount
 					ps.setInt(++index, cartItems.getNoofPrints());
@@ -343,7 +345,7 @@ public class MenuItemsRepository {
 				Items items = cartItems.getItems().get(index);
 				int cIndex = 0;
 				preparedStatement.setString(++cIndex, cartItems.getBranch());
-				preparedStatement.setString(++cIndex, cartItems.getDocdate());
+				preparedStatement.setObject(++cIndex, cartItems.getSystemDate());
 				preparedStatement.setString(++cIndex, cartItems.getBillno());
 				preparedStatement.setString(++cIndex, cartItems.getPrefix());
 				double amt = Double.valueOf(items.getTaxamt());
@@ -362,7 +364,7 @@ public class MenuItemsRepository {
 				preparedStatement.setString(++cIndex, "123");
 				preparedStatement.setString(++cIndex, items.getRemarks());
 				preparedStatement.setString(++cIndex, cartItems.getSrl());
-				preparedStatement.setString(++cIndex, cartItems.getType());
+				preparedStatement.setString(++cIndex, "Kot");
 
 				preparedStatement.setString(++cIndex, cartItems.getTableCode());
 				preparedStatement.setString(++cIndex, "rs"); // Set SubType
@@ -393,7 +395,7 @@ public class MenuItemsRepository {
 	}
 
 	public boolean clearKotTableForTable(String tableCode) {
-	
+
 		int tableCodeInint = Integer.valueOf(tableCode);
 		int kotStatus = jdbcTemplate.update("delete from Kot where TableCode=?", new PreparedStatementSetter() {
 			@Override
@@ -418,6 +420,28 @@ public class MenuItemsRepository {
 	public String getSRL(String branch) {
 		String sql = "Select isnull(Max(srl),0) From rSales Where Branch=? and type ='SAL'";
 		return jdbcTemplate.queryForObject(sql, new String[] { branch }, String.class);
+	}
+
+	public boolean isSrlExist(String branch, String srl) {
+		String sql = "Select count(Srl) isExist From rSales Where Branch=? and srl=? and type ='SAL'";
+		return jdbcTemplate.query(sql, new PreparedStatementSetter() {
+
+			@Override
+			public void setValues(PreparedStatement ps) throws SQLException {
+				ps.setString(1, branch);
+				ps.setString(2, srl);
+			}
+		}, new ResultSetExtractor<Boolean>() {
+
+			@Override
+			public Boolean extractData(ResultSet rs) throws SQLException, DataAccessException {
+				if (rs.next()) {
+					return rs.getInt("isExist") > 0;
+				}
+				return false;
+			}
+
+		});
 	}
 
 	public void updatePaymentDetails(PaymentDetails paymentDetails) {
@@ -451,4 +475,9 @@ public class MenuItemsRepository {
 		return jdbcTemplate.queryForObject("select Availability from TableMaster where Code=?",
 				new String[] { tableId }, String.class);
 	}
+
+	public String getBillType(String storeCode) {
+		return jdbcTemplate.queryForObject("select TypeBill from stores where Code=?", new String[] {storeCode} , String.class);
+	}
+	
 }

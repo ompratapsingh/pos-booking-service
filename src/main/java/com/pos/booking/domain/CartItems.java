@@ -1,5 +1,6 @@
 package com.pos.booking.domain;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -12,7 +13,7 @@ import lombok.ToString;
 @ToString
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CartItems {
-
+	
 	@JsonProperty(value = "branch", required = true)
 	private String branch;
 	private String srl;
@@ -31,18 +32,54 @@ public class CartItems {
 	private String enteredBy;
 	private String totalDiscAmt;
 	private String roundoff;
-	private String partyEmail="";
-	private String partyContact="";
-	private String partyAddr="";
+	private String partyEmail = "";
+	private String partyContact = "";
+	private String partyAddr = "";
 	private String totalbillAmount;
-	private String partyName="";
+	private String partyName = "";
 	private String touchValue;
 	private String billno;
 	private String taxAmt;
 	private String Addtaxamt;
 	private String tableStatus;
+	private boolean isBillGenerate;
+	private String sepecialDiscount;
+	private int disPrcnt;
+	private LocalDate systemDate;
 	
 	
+	public LocalDate getSystemDate() {
+		return systemDate;
+	}
+
+	public void setSystemDate(LocalDate systemDate) {
+		this.systemDate = systemDate;
+	}
+
+	public int getDisPrcnt() {
+		return disPrcnt;
+	}
+
+	public void setDisPrcnt(int disPrcnt) {
+		this.disPrcnt = disPrcnt;
+	}
+
+	public String getSepecialDiscount() {
+		return sepecialDiscount;
+	}
+
+	public void setSepecialDiscount(String sepecialDiscount) {
+		this.sepecialDiscount = sepecialDiscount;
+	}
+
+	public boolean isBillGenerate() {
+		return isBillGenerate;
+	}
+
+	public void setBillGenerate(boolean isBillGenerate) {
+		this.isBillGenerate = isBillGenerate;
+	}
+
 	public String getTableStatus() {
 		return tableStatus;
 	}
@@ -196,8 +233,8 @@ public class CartItems {
 
 	public String getDocdate() {
 		return docdate;
-	}
 
+	}
 	public void setDocdate(String docdate) {
 		this.docdate = docdate;
 	}
@@ -278,5 +315,4 @@ public class CartItems {
 				+ Addtaxamt + ", tableStatus=" + tableStatus + ", items=" + items + "]";
 	}
 
-	
 }

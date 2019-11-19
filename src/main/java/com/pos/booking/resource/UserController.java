@@ -22,15 +22,15 @@ import com.pos.booking.service.UserService;
 @RestController
 @RequestMapping("v1/user")
 public class UserController {
-	
-	private org.slf4j.Logger log = LoggerFactory.getLogger(MenuController.class);
-	
+
+	private org.slf4j.Logger log = LoggerFactory.getLogger(UserController.class);
+
 	@Autowired
 	private UserService userService;
 
 	@RequestMapping(value = "/login", method = RequestMethod.POST)
 	public ResponseEntity<User> login(@RequestBody User user) {
-		log.info("Calling login service for user <{}>",user.getId());
+		log.info("Calling login service for user <{}>", user.getId());
 		return ResponseEntity.ok(userService.fetchLoginDetails(user));
 	}
 
@@ -54,12 +54,12 @@ public class UserController {
 
 	@GetMapping(value = "/logout/{id}")
 	public void logOut(@PathVariable("id") String id) {
-		log.info("Calling logOut service for user: {} ",id);
+		log.info("Calling logOut service for user: {} ", id);
 		userService.logOutUpdate(id);
 	}
-	
+
 	@GetMapping(value = "/getReport")
 	public ResponseEntity<SaleReport> getReport() {
-		return ResponseEntity.ok(new SaleReport());
+		return ResponseEntity.ok(userService.getSalesReport());
 	}
 }

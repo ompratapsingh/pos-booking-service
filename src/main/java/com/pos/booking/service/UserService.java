@@ -1,16 +1,19 @@
 package com.pos.booking.service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.pos.booking.domain.SaleReport;
 import com.pos.booking.domain.TableStatus;
 import com.pos.booking.domain.User;
 import com.pos.booking.domain.UserTable;
 import com.pos.booking.exception.UserNotFoundException;
 import com.pos.booking.repository.UserRepository;
+import com.pos.booking.util.BookingUtil;
 
 /**
  * 
@@ -46,5 +49,9 @@ public class UserService {
 	
 	public void logOutUpdate(String id) {
 		repository.updateLoginAndLogout(0,  id);
+	}
+	
+	public SaleReport getSalesReport() {
+		return repository.getSalesReportData(BookingUtil.createPrefix(LocalDate.now()));
 	}
 }
