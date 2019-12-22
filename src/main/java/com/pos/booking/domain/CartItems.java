@@ -13,7 +13,7 @@ import lombok.ToString;
 @ToString
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CartItems {
-	
+
 	@JsonProperty(value = "branch", required = true)
 	private String branch;
 	private String srl;
@@ -46,8 +46,17 @@ public class CartItems {
 	private String sepecialDiscount;
 	private int disPrcnt;
 	private LocalDate systemDate;
-	
-	
+
+	private RestaurantDetails restaurantDetails;
+
+	public RestaurantDetails getRestaurantDetails() {
+		return restaurantDetails;
+	}
+
+	public void setRestaurantDetails(RestaurantDetails restaurantDetails) {
+		this.restaurantDetails = restaurantDetails;
+	}
+
 	public LocalDate getSystemDate() {
 		return systemDate;
 	}
@@ -235,6 +244,7 @@ public class CartItems {
 		return docdate;
 
 	}
+
 	public void setDocdate(String docdate) {
 		this.docdate = docdate;
 	}

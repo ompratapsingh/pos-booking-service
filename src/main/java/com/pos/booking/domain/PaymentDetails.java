@@ -138,4 +138,13 @@ public class PaymentDetails {
 		this.status = status;
 	}
 
+	@Override
+	public String toString() {
+		return "PaymentDetails [cashAmt=" + cashAmt + ", cCBank=" + cCBank + ", cardAmt=" + cardAmt + ", cardnumber="
+				+ cardnumber + ", chqAmt=" + chqAmt + ", chqno=" + chqno + ", chqBank=" + chqBank + ", debitAmt="
+				+ debitAmt + ", debtors=" + debtors + ", status=" + status + ", settleby=" + settleby + ", settletime="
+				+ settletime + ", srl=" + srl + ", tableCode=" + tableCode + ", refundAmt=" + refundAmt + "]";
+	}
+	
+	
 }

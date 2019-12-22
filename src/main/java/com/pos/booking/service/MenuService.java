@@ -12,13 +12,16 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.pos.booking.cache.ApplicationCahce;
 import com.pos.booking.domain.BillDetails;
 import com.pos.booking.domain.CartItems;
 import com.pos.booking.domain.Category;
 import com.pos.booking.domain.MenuItems;
 import com.pos.booking.domain.PaymentDetails;
+import com.pos.booking.domain.RestaurantDetails;
 import com.pos.booking.domain.TableStatus;
 import com.pos.booking.exception.DaoException;
+import com.pos.booking.print.service.PrinterService;
 import com.pos.booking.repository.MenuItemsRepository;
 import com.pos.booking.repository.UserRepository;
 import com.pos.booking.util.BookingUtil;
@@ -38,6 +41,9 @@ public class MenuService {
 
 	@Autowired
 	private UserRepository userRepository;
+
+	@Autowired
+	private PrinterService printerService;
 
 	public List<Category> getCategory() {
 		List<Category> categories = menuItemsRepository.fetchCategories();
@@ -59,6 +65,7 @@ public class MenuService {
 		cartItems.setDoctime(
 				BookingUtil.getCurrentDateTime().getHour() + ":" + BookingUtil.getCurrentDateTime().getMinute());
 		cartItems.setDocdate(BookingUtil.getCurrentDate());
+		cartItems.setSystemDate(BookingUtil.getCurrentDateinMill());
 		cartItems.setPrefix(BookingUtil.createPrefix(LocalDate.now()));
 		cartItems.setSrl(srl);
 		cartItems.setType("KOT");
@@ -70,6 +77,9 @@ public class MenuService {
 		}
 		userRepository.updateTableStatus(TableStatus.TABLE_STATUS_OCCUPIED.getStatusCode(), cartItems.getTableCode());
 		boolean status = menuItemsRepository.addToKot(cartItems) && menuItemsRepository.addToOpenTable(cartItems);
+		// String printContent = PrintServiceUtil.getKotPrintContent(cartItems);
+		// log.info("Kot print content {}",printContent);
+		// printerService.printString("PrinterName", printContent);
 		log.info("Sucessfully Added To KOT with status code {}", status);
 		return status;
 	}
@@ -92,7 +102,7 @@ public class MenuService {
 		CartItems cartItems = menuItemsRepository.getKotDetailsById(billDetails.getTableCode());
 		if (cartItems != null) {
 			String billType = menuItemsRepository.getBillType(cartItems.getStoreCode());
-			log.info("Bill Type is: <{}> for store code: <{}> ",billType,cartItems.getStoreCode());
+			log.info("Bill Type is: <{}> for store code: <{}> ", billType, cartItems.getStoreCode());
 			cartItems.setType(billType);
 			cartItems.setRoundoff(String.valueOf(Double.valueOf(cartItems.getTotalbillAmount())
 					- Math.floor(Double.valueOf(cartItems.getTotalbillAmount()))));
@@ -106,28 +116,35 @@ public class MenuService {
 					cartItems.getItems().stream().mapToDouble(cart -> Double.valueOf(cart.getAddtaxAmt())).sum())); // CGST
 			// tax
 			cartItems.setPrefix(BookingUtil.createPrefix(LocalDate.now()));
-			cartItems.setDoctime(BookingUtil.getCurrentDateTime().getHour() + ":" + BookingUtil.getCurrentDateTime().getMinute());
+			cartItems.setDoctime(
+					BookingUtil.getCurrentDateTime().getHour() + ":" + BookingUtil.getCurrentDateTime().getMinute());
 			cartItems.setSystemDate(BookingUtil.getCurrentDateinMill());
 			cartItems.setSepecialDiscount(billDetails.getSpecialDiscount());
 			if (Integer.valueOf(billDetails.getSpecialDiscount()) > 0) {
 				double disCount = (Double.valueOf(billDetails.getSpecialDiscount()) / 100)
 						* Double.valueOf(cartItems.getTotalbillAmount());
-				String payableAmount = String.valueOf(Double.valueOf(cartItems.getTotalbillAmount()) - disCount);
+				String payableAmount = String
+						.valueOf(Math.round(Double.valueOf(cartItems.getTotalbillAmount()) - disCount));
 				cartItems.setTotalbillAmount(payableAmount);
 				double totalDiscAmnt = Double.valueOf(cartItems.getTotalDiscAmt()) + disCount;
 				cartItems.setTotalDiscAmt(String.valueOf(totalDiscAmnt));
+				ApplicationCahce<String, String> applicationCahce = new ApplicationCahce<>();
+				applicationCahce.put(billDetails.getTableCode(), String.valueOf(totalDiscAmnt));
 				log.info("Discount Amount: {} and Payable Amount: {} for table ID: {}", disCount, payableAmount,
 						billDetails.getTableCode());
 			}
 			cartItems.setDisPrcnt(Integer.valueOf(billDetails.getSpecialDiscount()));
 			boolean isExist = menuItemsRepository.isSrlExist(cartItems.getBranch(), billDetails.getSrl());
-			log.info("Is srl exist for srl: {} and branch: {} status: {} ",billDetails.getSrl(), cartItems.getBranch(),isExist);
+			log.info("Is srl exist for srl: {} and branch: {} status: {} ", billDetails.getSrl(), cartItems.getBranch(),
+					isExist);
 			if (isExist) {
-				log.info("Bill is generated already for SRL: {}", billDetails.getSrl());
+				log.info("Bill allready generated for SRL: {}", billDetails.getSrl());
 				cartItems.setBillGenerate(true);
 				return cartItems;
 			}
-			cartItems.setSrl("00" + ((Integer.valueOf(menuItemsRepository.getSRL(cartItems.getBranch())) + 1)));
+			String srl = "00" + ((Integer.valueOf(menuItemsRepository.getSRL(cartItems.getBranch(),cartItems.getPrefix(),cartItems.getType())) + 1));
+			log.info("Genrated new SRL:  {} for table ID: {}", srl, billDetails.getTableCode());
+			cartItems.setSrl(srl);
 			cartItems.setBillno(cartItems.getType() + cartItems.getSrl());
 			log.info("Generating bill for total items: {} ", cartItems.getItems().size());
 			menuItemsRepository.updateRsales(cartItems);
@@ -138,6 +155,8 @@ public class MenuService {
 			log.info("Generate Bill Request sucessfully completd for total item's: <{}> and total amount: <{}>",
 					cartItems.getItems(), cartItems.getTotalbillAmount());
 			cartItems.setBillGenerate(true);
+			RestaurantDetails restaurantDetails = menuItemsRepository.getrestaurantDetails();
+			cartItems.setRestaurantDetails(restaurantDetails);
 			return cartItems;
 		} else {
 			log.error("No items available in cart for table code {}", billDetails.getTableCode());
@@ -147,16 +166,19 @@ public class MenuService {
 	}
 
 	public void updatePaymentDetails(PaymentDetails paymentDetails) {
-		log.info("Updating payment details for bill no {}", paymentDetails.getSrl());
+		log.info("Updating payment details for table details: {}", paymentDetails);
 		LocalDateTime localDateTime = LocalDateTime.now();
-		paymentDetails.setSettletime(localDateTime.getHour() + "" + localDateTime.getMinute());
+		paymentDetails.setSettletime(localDateTime.getHour() + ":" + localDateTime.getMinute());
 		paymentDetails.setStatus("S");
 		menuItemsRepository.updatePaymentDetails(paymentDetails);
 		log.info("Cleaning KOT");
 		menuItemsRepository.clearKotTableForTable(paymentDetails.getTableCode());
-		userRepository.updateTableStatus(TableStatus.TABLE_STATUS_AVAILABLE.getStatusCode(),paymentDetails.getTableCode());
+		userRepository.updateTableStatus(TableStatus.TABLE_STATUS_AVAILABLE.getStatusCode(),
+				paymentDetails.getTableCode());
+		ApplicationCahce<String, String> applicationCahce = new ApplicationCahce<>();
+		applicationCahce.remove(paymentDetails.getTableCode());
 		log.info("Settlement done for table ID <{}>.Current table status: {}", paymentDetails.getTableCode(),
-		menuItemsRepository.getTableStatus(paymentDetails.getTableCode()));
+				menuItemsRepository.getTableStatus(paymentDetails.getTableCode()));
 	}
 
 }

@@ -1,11 +1,8 @@
 package com.pos.booking.repository;
 
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDate;
-import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,6 +21,7 @@ import com.pos.booking.domain.Category;
 import com.pos.booking.domain.Items;
 import com.pos.booking.domain.MenuItems;
 import com.pos.booking.domain.PaymentDetails;
+import com.pos.booking.domain.RestaurantDetails;
 import com.pos.booking.exception.DaoException;
 
 @Repository
@@ -43,31 +41,14 @@ public class MenuItemsRepository {
 	private static final String QUERY_FOR_INSERT_CART_ITEMS = "insert into Kot (Branch,Prefix," + "Code," + "Qty,"
 			+ "Rate," + "Disc, " + "DiscAmt," + "Doctime, " + "TaxCode," + "NoofPrints," + "PaxNo," + "Remark,"
 			+ "Store," + "TableCode," + "Type," + "Taxamt," + "AddtaxAmt," + "AddtaxAmt2, " + "Captain," + "HWSerial,"
-			+ "Srl," + "Sno" + ") values (?," + "?," + "?," + "?," + "?," + "?," + "?," + "?," + "?," + "?," + "?,"
-			+ "?," + "?," + "?," + "?," + "?," + "?," + "?," + "?," + "?," + "?," + "?)";
+			+ "Srl," + "Sno," + "Amt"+") values (?," + "?," + "?," + "?," + "?," + "?," + "?," + "?," + "?," + "?," + "?,"
+			+ "?," + "?," + "?," + "?," + "?," + "?," + "?," + "?," + "?," + "?," + "?,"+"?"+")";
 
 	private static final String QUERY_FOR_INSERT_CART_DATA_IN_OPEN_TABLE = "insert into Opentables (Branch" + ",Type"
 			+ ",Srl" + ",Prefix" + ",Captain" + ",Docdate" + ",PartyName" + ",px" + ",Tablecode" + ",Doctime"
 			+ ",BillAmount" + ",PartyAddr" + ",PartyContact" + ",Store" + ",Noofprints" + ",PartyEmail" + ",Roundoff"
 			+ ",DiscAmt" + ",HwSerial" + ",EnteredBy" + ") values (?," + "?," + "?," + "?," + "?," + "?," + "?," + "?,"
 			+ "?," + "?," + "?," + "?," + "?," + "?," + "?," + "?," + "?," + "?," + "?," + "?)";
-
-	/*
-	 * private static final String QUERY_FOR_FETCH_KOT_DETAILS_BY_TABLE_CODE =
-	 * "SELECT " + "otb.Branch," + "otb.Type," + "otb.Srl," + "otb.Prefix," +
-	 * "otb.Captain," + "otb.Docdate," + "otb.PartyName," + "otb.px," +
-	 * "otb.Tablecode," + "otb.Doctime," + "otb.BillAmount," + "otb.PartyAddr," +
-	 * "otb.PartyContact," + "otb.Store," + "otb.Noofprints," + "otb.PartyEmail," +
-	 * "otb.Roundoff," + "otb.DiscAmt," + "otb.HwSerial," + "otb.EnteredBy," +
-	 * "kt.SNO as kt_sno," + "kt.Code as kt_Code," + "kt.Qty as kt_Qty," +
-	 * "kt.Rate as kt_Rate," + "kt.Disc as kt_Disc," + "kt.DiscAmt as kt_DiscAmt," +
-	 * "kt.Docdate as kt_Docdate," + "kt.Doctime kt_Doctime," +
-	 * "kt.TaxCode as kt_TaxCode," + "kt.Remark as kt_Remark," +
-	 * "kt.Taxamt as kt_Taxamt," + "kt.AddtaxAmt as kt_AddtaxAmt" +
-	 * "from Opentables otb inner join KOT kt on otb.Srl=kt.srl where otb.Tablecode=?"
-	 * ;
-	 * 
-	 */
 
 	private static final String QUERY_FOR_FETCH_SRL = "Select isnull(Max(srl),0) as srl_num From KOT";
 
@@ -95,8 +76,6 @@ public class MenuItemsRepository {
 				items.setRate(resultSet.getString("Rate"));
 				items.setDiscPercent(resultSet.getString("DiscPercent"));
 				items.setTaxCode(resultSet.getString("TaxCode"));
-				// items.setAppGroup(resultSet.getString("AppGroup"));
-				// Not required in APP
 				items.setAppGroup("");
 				items.setKotPrinter(resultSet.getString("KotPrinter"));
 				items.setTax_name(resultSet.getString("tax_name"));
@@ -128,8 +107,8 @@ public class MenuItemsRepository {
 					preparedStatement.setString(++cIndex, items.getDisc());
 					preparedStatement.setString(++cIndex, items.getDiscAmt());
 					preparedStatement.setString(++cIndex, cart.getDoctime());
-					preparedStatement.setString(++cIndex, cart.getTableCode());
-					preparedStatement.setInt(++cIndex,   cart.getNoofPrints());
+					preparedStatement.setString(++cIndex, items.getTaxCode());
+					preparedStatement.setInt(++cIndex, cart.getNoofPrints());
 					preparedStatement.setString(++cIndex, cart.getPaxNo());
 					preparedStatement.setString(++cIndex, items.getRemarks());
 					preparedStatement.setString(++cIndex, cart.getStoreCode());
@@ -142,6 +121,8 @@ public class MenuItemsRepository {
 					preparedStatement.setString(++cIndex, cart.getHwserial());
 					preparedStatement.setString(++cIndex, cart.getSrl());
 					preparedStatement.setString(++cIndex, items.getSno());
+					int amt = items.getQty() * Integer.valueOf(items.getRate());
+					preparedStatement.setString(++cIndex, String.valueOf(amt));
 				}
 
 				@Override
@@ -170,7 +151,7 @@ public class MenuItemsRepository {
 				preparedStatement.setString(4, cart.getPrefix());
 				preparedStatement.setString(5, cart.getCaptain());
 
-				preparedStatement.setDate(6, new Date(LocalDate.now().getLong(ChronoField.EPOCH_DAY)));
+				preparedStatement.setObject(6, cart.getSystemDate());
 
 				preparedStatement.setString(7, cart.getPartyName());
 				preparedStatement.setString(8, cart.getPaxNo());
@@ -236,7 +217,6 @@ public class MenuItemsRepository {
 								cartItems.setStoreCode(resultSet.getString("Store"));
 								cartItems.setNoofPrints(Integer.valueOf(getTotal("Noofprints", tableId)));
 								cartItems.setPartyEmail(resultSet.getString("PartyEmail"));
-								// cartItems.setRoundoff(getTotal("Roundoff", tableId));
 								cartItems.setTotalDiscAmt(getTotal("DiscAmt", tableId));
 								cartItems.setHwserial(resultSet.getString("HwSerial"));
 								cartItems.setEnteredBy(resultSet.getString("EnteredBy"));
@@ -417,9 +397,9 @@ public class MenuItemsRepository {
 		return (kotStatus == 1 && opnTableStatus == 1);
 	}
 
-	public String getSRL(String branch) {
-		String sql = "Select isnull(Max(srl),0) From rSales Where Branch=? and type ='SAL'";
-		return jdbcTemplate.queryForObject(sql, new String[] { branch }, String.class);
+	public String getSRL(String branch, String prefix, String type) {
+		String sql = "Select isnull(Max(srl),0) From rSales Where Branch=? and Prefix = ? and type =?";
+		return jdbcTemplate.queryForObject(sql, new String[] { branch, prefix, type }, String.class);
 	}
 
 	public boolean isSrlExist(String branch, String srl) {
@@ -477,7 +457,25 @@ public class MenuItemsRepository {
 	}
 
 	public String getBillType(String storeCode) {
-		return jdbcTemplate.queryForObject("select TypeBill from stores where Code=?", new String[] {storeCode} , String.class);
+		return jdbcTemplate.queryForObject("select TypeBill from stores where Code=?", new String[] { storeCode },
+				String.class);
 	}
+
+	public RestaurantDetails getrestaurantDetails() {
+		return jdbcTemplate.query("select Name,Addrl1,Addrl2,Addrl3,aCity,aTel1,aAuthno from TfatBranch", rs -> {
+			RestaurantDetails restaurantDetails = new RestaurantDetails();
+			if (rs.next()) {
+				restaurantDetails.setrName(rs.getString("Name"));
+				StringBuilder addressBuilder = new StringBuilder();
+				addressBuilder.append(rs.getString("Addrl1")).append(rs.getString("Addrl2"))
+						.append(rs.getString("Addrl3")).append(", ").append(rs.getString("aCity"));
+				restaurantDetails.setrAddress(addressBuilder.toString());
+				restaurantDetails.setrTelephone(rs.getString("aTel1"));
+				restaurantDetails.setrGSTNo(rs.getString("aAuthno"));
+			}
+			return restaurantDetails;
+		});
+	}
+	
 	
 }

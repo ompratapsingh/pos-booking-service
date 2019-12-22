@@ -138,9 +138,9 @@ public class UserRepository {
 			public SaleReport extractData(ResultSet rs) throws SQLException, DataAccessException {
 				SaleReport saleReport = new SaleReport();
 				while (rs.next()) {
-					saleReport.setTodaySale(rs.getString("Today"));
-					saleReport.setMonthlySale(rs.getString("CurrentMonth"));
-					saleReport.setYearlySale(rs.getString("CurrentYear"));
+					saleReport.setTodaySale(replaceDecimal(rs.getString("Today")));
+					saleReport.setMonthlySale(replaceDecimal(rs.getString("CurrentMonth")));
+					saleReport.setYearlySale(replaceDecimal(rs.getString("CurrentYear")));
 				}
 				return saleReport;
 			}
@@ -148,4 +148,10 @@ public class UserRepository {
 
 	}
 
+	private String replaceDecimal(String value) {
+		if(value.contains(".")) {
+			return value.substring(0, value.indexOf("."));
+		}
+		return value;
+	}
 }
