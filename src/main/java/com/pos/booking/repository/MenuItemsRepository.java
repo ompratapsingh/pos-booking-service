@@ -184,7 +184,7 @@ public class MenuItemsRepository {
 						+ "otb.Tablecode,  otb.Doctime,  otb.BillAmount,  otb.PartyAddr,  otb.PartyContact,"
 						+ "otb.Store,  otb.Noofprints,  otb.PartyEmail,  otb.Roundoff,  otb.DiscAmt,  otb.HwSerial,"
 						+ "otb.EnteredBy,  kt.SNO as kt_sno,  kt.Code as kt_Code,  kt.Qty as kt_Qty,")
-				.append("kt.Rate as kt_Rate,  kt.Disc as kt_Disc,  kt.DiscAmt as kt_DiscAmt,  kt.Docdate as kt_Docdate,"
+				.append("kt.Amt as Amount, kt.Rate as kt_Rate,  kt.Disc as kt_Disc,  kt.DiscAmt as kt_DiscAmt,  kt.Docdate as kt_Docdate,"
 						+ "kt.Doctime kt_Doctime,  kt.TaxCode as kt_TaxCode,  kt.Remark as kt_Remark,"
 						+ "kt.Taxamt as kt_Taxamt,  kt.AddtaxAmt as kt_AddtaxAmt,kt.AddtaxAmt2 kt_AddtaxAmt2,itmst.Name as item_name")
 				.append(" from Opentables otb inner join KOT kt on otb.Srl=kt.srl inner join ItemMaster as itmst on itmst.Code=kt.Code where otb.Tablecode=?");
@@ -217,6 +217,7 @@ public class MenuItemsRepository {
 								cartItems.setStoreCode(resultSet.getString("Store"));
 								cartItems.setNoofPrints(Integer.valueOf(getTotal("Noofprints", tableId)));
 								cartItems.setPartyEmail(resultSet.getString("PartyEmail"));
+								cartItems.setRoundoff(getTotal("Roundoff", tableId));
 								cartItems.setTotalDiscAmt(getTotal("DiscAmt", tableId));
 								cartItems.setHwserial(resultSet.getString("HwSerial"));
 								cartItems.setEnteredBy(resultSet.getString("EnteredBy"));
@@ -246,6 +247,7 @@ public class MenuItemsRepository {
 		item.setAddtaxAmt(resultSet.getString("kt_AddtaxAmt"));
 		item.setAddtaxAmt2(resultSet.getString("kt_AddtaxAmt2"));
 		item.setItem_name(resultSet.getString("item_name"));
+		item.setAmount(resultSet.getString("Amount"));
 		return item;
 	}
 
@@ -254,7 +256,7 @@ public class MenuItemsRepository {
 				.append("as total from Opentables where Tablecode=?");
 		return jdbcTemplate.queryForObject(query.toString(), new String[] { tableId }, String.class);
 	}
-
+	
 	/**
 	 * 
 	 * @param cartItems
@@ -266,8 +268,8 @@ public class MenuItemsRepository {
 						+ "DocTime," + "NetAmount," + "NoOfPrints," + "PartyAddr," + "PartyContact," + "PartyName,"
 						+ "Prefix," + "Px," + "RoundOff," + "Srl," + "Store," + "TableCode," + "TaxAmt," + "TipsAmt,"
 						+ "Type," + "TouchValue," + "AuthIDs," + "HWSerial," + "MainType," + "SubType," + "AddTaxAmt,"
-						+ "SurchargeAmt," + "PartyEmail" + ") ")
-				.append(" values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+						+ "SurchargeAmt," + "PartyEmail," + "BillAmount," +"EnteredBy" + " ) ")
+				.append(" values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 		try {
 			jdbcTemplate.update(QUERY_FOR_UPDATE_Rstock.toString(), new PreparedStatementSetter() {
 				@Override
@@ -280,7 +282,7 @@ public class MenuItemsRepository {
 					ps.setString(++index, cartItems.getTotalDiscAmt()); // Disc amt
 					ps.setObject(++index, cartItems.getSystemDate());
 					ps.setString(++index, cartItems.getDoctime());
-					ps.setString(++index, cartItems.getTotalbillAmount()); // Net Amount
+					ps.setString(++index, cartItems.getNetAmount()); // Net Amount
 					ps.setInt(++index, cartItems.getNoofPrints());
 					ps.setString(++index, cartItems.getPartyAddr());
 					ps.setString(++index, cartItems.getPartyContact());
@@ -302,6 +304,8 @@ public class MenuItemsRepository {
 					ps.setString(++index, cartItems.getAddtaxamt()); // AddTax
 					ps.setString(++index, ""); // Keep empty surcharge
 					ps.setString(++index, cartItems.getPartyEmail());
+					ps.setString(++index, cartItems.getTotalbillAmount());
+					ps.setString(++index, cartItems.getEnteredBy());
 				}
 
 			});
@@ -328,7 +332,7 @@ public class MenuItemsRepository {
 				preparedStatement.setObject(++cIndex, cartItems.getSystemDate());
 				preparedStatement.setString(++cIndex, cartItems.getBillno());
 				preparedStatement.setString(++cIndex, cartItems.getPrefix());
-				double amt = Double.valueOf(items.getTaxamt());
+				double amt = Double.parseDouble(items.getAmount());
 				int iAmt = (int) amt;
 				iAmt = (iAmt * -1);
 				preparedStatement.setString(++cIndex, String.valueOf(iAmt));
@@ -341,7 +345,7 @@ public class MenuItemsRepository {
 				preparedStatement.setString(++cIndex, items.getDisc());
 				preparedStatement.setInt(++cIndex, 0); // notinStock
 				preparedStatement.setString(++cIndex, cartItems.getPaxNo()); // paxNumber
-				preparedStatement.setString(++cIndex, "123");
+				preparedStatement.setString(++cIndex, items.getRate());
 				preparedStatement.setString(++cIndex, items.getRemarks());
 				preparedStatement.setString(++cIndex, cartItems.getSrl());
 				preparedStatement.setString(++cIndex, "Kot");

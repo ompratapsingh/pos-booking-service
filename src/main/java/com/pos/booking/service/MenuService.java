@@ -16,6 +16,7 @@ import com.pos.booking.cache.ApplicationCahce;
 import com.pos.booking.domain.BillDetails;
 import com.pos.booking.domain.CartItems;
 import com.pos.booking.domain.Category;
+import com.pos.booking.domain.Items;
 import com.pos.booking.domain.MenuItems;
 import com.pos.booking.domain.PaymentDetails;
 import com.pos.booking.domain.RestaurantDetails;
@@ -85,14 +86,15 @@ public class MenuService {
 	}
 
 	public CartItems getCartDetails(String tableId) {
+		log.info("Calling cart details service for tableId: {}", tableId);
 		CartItems cartItems = menuItemsRepository.getKotDetailsById(tableId);
+		if (null == cartItems) {
+			return new CartItems();
+		}
+		log.info("Total item ordered: <{}> for table ID: <{}>", cartItems.getItems(), tableId);
 		String tableStatus = menuItemsRepository.getTableStatus(tableId);
 		cartItems.setTableStatus(tableStatus);
-		cartItems.setRoundoff(String.valueOf(Double.valueOf(cartItems.getTotalbillAmount())
-				- Math.floor(Double.valueOf(cartItems.getTotalbillAmount()))));
-		log.info("Total item ordered: <{}> for table ID: <{}>", cartItems.getItems(), tableId);
-		boolean status = TableStatus.TABLE_STATUS_SETTLEMENT_PENDING.getStatusCode().equals(tableStatus);
-		cartItems.setBillGenerate(status);
+		cartItems.setBillGenerate(TableStatus.TABLE_STATUS_SETTLEMENT_PENDING.getStatusCode().equals(tableStatus));
 		return cartItems;
 	}
 
@@ -104,8 +106,6 @@ public class MenuService {
 			String billType = menuItemsRepository.getBillType(cartItems.getStoreCode());
 			log.info("Bill Type is: <{}> for store code: <{}> ", billType, cartItems.getStoreCode());
 			cartItems.setType(billType);
-			cartItems.setRoundoff(String.valueOf(Double.valueOf(cartItems.getTotalbillAmount())
-					- Math.floor(Double.valueOf(cartItems.getTotalbillAmount()))));
 			cartItems.setDocdate(BookingUtil.getCurrentDate());
 			LocalDateTime localDateTime = LocalDateTime.now();
 			cartItems.setTouchValue(localDateTime.getYear() + "" + localDateTime.getMonthValue() + ""
@@ -114,18 +114,22 @@ public class MenuService {
 					cartItems.getItems().stream().mapToDouble(cart -> Double.valueOf(cart.getTaxamt())).sum())); // SGST
 			cartItems.setAddtaxamt(String.valueOf(
 					cartItems.getItems().stream().mapToDouble(cart -> Double.valueOf(cart.getAddtaxAmt())).sum())); // CGST
-			// tax
+			//tax
 			cartItems.setPrefix(BookingUtil.createPrefix(LocalDate.now()));
 			cartItems.setDoctime(
 					BookingUtil.getCurrentDateTime().getHour() + ":" + BookingUtil.getCurrentDateTime().getMinute());
 			cartItems.setSystemDate(BookingUtil.getCurrentDateinMill());
 			cartItems.setSepecialDiscount(billDetails.getSpecialDiscount());
+			cartItems.setEnteredBy(billDetails.getEnteredBy());
 			if (Integer.valueOf(billDetails.getSpecialDiscount()) > 0) {
 				double disCount = (Double.valueOf(billDetails.getSpecialDiscount()) / 100)
 						* Double.valueOf(cartItems.getTotalbillAmount());
+				disCount = Math.floor(disCount);
 				String payableAmount = String
-						.valueOf(Math.round(Double.valueOf(cartItems.getTotalbillAmount()) - disCount));
+						.valueOf(Math.round(Double.valueOf(cartItems.getTotalbillAmount()))-disCount);
+				
 				cartItems.setTotalbillAmount(payableAmount);
+				
 				double totalDiscAmnt = Double.valueOf(cartItems.getTotalDiscAmt()) + disCount;
 				cartItems.setTotalDiscAmt(String.valueOf(totalDiscAmnt));
 				ApplicationCahce<String, String> applicationCahce = new ApplicationCahce<>();
@@ -133,6 +137,11 @@ public class MenuService {
 				log.info("Discount Amount: {} and Payable Amount: {} for table ID: {}", disCount, payableAmount,
 						billDetails.getTableCode());
 			}
+			long netAmount = 0;
+			for(Items items: cartItems.getItems()) {
+				netAmount = netAmount + (Double.valueOf(items.getRate()).intValue()* Double.valueOf(items.getQty()).intValue());
+			}
+			cartItems.setNetAmount(String.valueOf(netAmount));
 			cartItems.setDisPrcnt(Integer.valueOf(billDetails.getSpecialDiscount()));
 			boolean isExist = menuItemsRepository.isSrlExist(cartItems.getBranch(), billDetails.getSrl());
 			log.info("Is srl exist for srl: {} and branch: {} status: {} ", billDetails.getSrl(), cartItems.getBranch(),

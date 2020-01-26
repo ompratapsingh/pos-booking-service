@@ -16,7 +16,16 @@ public class Items {
 	private String addtaxAmt;
 	private String addtaxAmt2;
 	private String item_name;
+	private String amount;
 	
+	public String getAmount() {
+		return amount;
+	}
+
+	public void setAmount(String amount) {
+		this.amount = amount;
+	}
+
 	public String getItem_name() {
 		return item_name;
 	}

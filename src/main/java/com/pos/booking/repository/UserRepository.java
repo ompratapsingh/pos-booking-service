@@ -149,7 +149,7 @@ public class UserRepository {
 	}
 
 	private String replaceDecimal(String value) {
-		if(value.contains(".")) {
+		if(value!=null &&  value.contains(".")) {
 			return value.substring(0, value.indexOf("."));
 		}
 		return value;

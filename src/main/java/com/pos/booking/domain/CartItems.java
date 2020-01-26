@@ -46,6 +46,15 @@ public class CartItems {
 	private String sepecialDiscount;
 	private int disPrcnt;
 	private LocalDate systemDate;
+	private String netAmount;
+	
+	public String getNetAmount() {
+		return netAmount;
+	}
+
+	public void setNetAmount(String netAmount) {
+		this.netAmount = netAmount;
+	}
 
 	private RestaurantDetails restaurantDetails;
 
