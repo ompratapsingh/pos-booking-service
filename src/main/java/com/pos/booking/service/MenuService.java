@@ -3,6 +3,7 @@ package com.pos.booking.service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +37,8 @@ import com.pos.booking.util.BookingUtil;
 public class MenuService {
 
 	private static final Logger log = LoggerFactory.getLogger(MenuService.class);
-
+	
+	public static final String ROUND_OFF_CACHE_KEY = "roundoff";
 	@Autowired
 	private MenuItemsRepository menuItemsRepository;
 
@@ -94,6 +96,11 @@ public class MenuService {
 		log.info("Total item ordered: <{}> for table ID: <{}>", cartItems.getItems(), tableId);
 		String tableStatus = menuItemsRepository.getTableStatus(tableId);
 		cartItems.setTableStatus(tableStatus);
+		ApplicationCahce<String, String> applicationCahce =new ApplicationCahce<>();
+		String roundOff = applicationCahce.getValue(tableId+ROUND_OFF_CACHE_KEY);
+		if(roundOff!=null && roundOff.length()>0) {
+			cartItems.setRoundoff(roundOff);
+		}
 		cartItems.setBillGenerate(TableStatus.TABLE_STATUS_SETTLEMENT_PENDING.getStatusCode().equals(tableStatus));
 		return cartItems;
 	}
@@ -124,9 +131,8 @@ public class MenuService {
 			if (Integer.valueOf(billDetails.getSpecialDiscount()) > 0) {
 				double disCount = (Double.valueOf(billDetails.getSpecialDiscount()) / 100)
 						* Double.valueOf(cartItems.getTotalbillAmount());
-				disCount = Math.floor(disCount);
 				String payableAmount = String
-						.valueOf(Math.round(Double.valueOf(cartItems.getTotalbillAmount()))-disCount);
+						.valueOf(Math.round(Double.valueOf(cartItems.getTotalbillAmount())-disCount));
 				
 				cartItems.setTotalbillAmount(payableAmount);
 				
@@ -136,6 +142,9 @@ public class MenuService {
 				applicationCahce.put(billDetails.getTableCode(), String.valueOf(totalDiscAmnt));
 				log.info("Discount Amount: {} and Payable Amount: {} for table ID: {}", disCount, payableAmount,
 						billDetails.getTableCode());
+				String roundOff = String.format(Locale.US, "%.2f", (Math.round(Double.valueOf(payableAmount))) - Double.valueOf(payableAmount));
+				applicationCahce.put(billDetails.getTableCode()+ROUND_OFF_CACHE_KEY, String.valueOf(roundOff));
+				cartItems.setRoundoff(roundOff);
 			}
 			long netAmount = 0;
 			for(Items items: cartItems.getItems()) {
@@ -186,6 +195,7 @@ public class MenuService {
 				paymentDetails.getTableCode());
 		ApplicationCahce<String, String> applicationCahce = new ApplicationCahce<>();
 		applicationCahce.remove(paymentDetails.getTableCode());
+		applicationCahce.remove(paymentDetails.getTableCode()+ROUND_OFF_CACHE_KEY);
 		log.info("Settlement done for table ID <{}>.Current table status: {}", paymentDetails.getTableCode(),
 				menuItemsRepository.getTableStatus(paymentDetails.getTableCode()));
 	}
